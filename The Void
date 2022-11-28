@@ -124,6 +124,7 @@ local DoMagic       = Replicated['Remotes']['DoMagic']
 local Combat        = Replicated['Remotes']['Combat']
 local KeyReserve    = Replicated['Remotes']['KeyReserve']
 local PlayerData    = Replicated['Remotes']['PlayerData']
+local ClientData    = Replicated['Remotes']['ClientData']
 
 if passes ~= 3 then while true do print('') end end
 
@@ -214,19 +215,24 @@ function Player.new(playerObj)
 
     local velocityConnection
 
-    pcall(function()
-        velocityConnection = RunService.Heartbeat:Connect(function()
-            if newPlayer == nil then velocityConnection:Disconnect() return end
-            if newPlayer.PrimaryPart == nil then return end
+    velocityConnection = RunService.Heartbeat:Connect(function()
+
+        if newPlayer == nil then velocityConnection:Disconnect() return end
+        if newPlayer.PrimaryPart == nil then return end
+
+        local startTime     = os.clock()
+        local startPosition = newPlayer.PrimaryPart.Position
     
-            local startTime     = os.clock()
-            local startPosition = newPlayer.PrimaryPart.Position
-    
-            task.wait(.01)
-    
-            newPlayer.Velocity = (newPlayer.PrimaryPart.Position - startPosition)/(os.clock() - startTime)
-        end)    
-    end)
+        task.wait(.01)
+
+        if newPlayer == nil then velocityConnection:Disconnect() return end
+        if newPlayer.PrimaryPart == nil then return end
+
+        local velocity = (newPlayer.PrimaryPart.Position - startPosition)/(os.clock() - startTime)
+        if type(velocity) ~= 'number' then return end
+
+        newPlayer.Velocity = velocity
+    end)    
 
     local connection
 
@@ -234,6 +240,7 @@ function Player.new(playerObj)
         if player ~= playerObj then return end
 
         newPlayer = {}
+        velocityConnection:Disconnect()
         connection:Disconnect()
 
     end)
@@ -253,6 +260,8 @@ function LocalPlayer.new(playerObj)
 
     newLocalPlayer.SelectedTarget = newLocalPlayer
     newLocalPlayer.ClosestTarget  = newLocalPlayer
+
+    while getrenv()._G['PlayersData'][playerObj] == nil do task.wait() end
 
     newLocalPlayer['MaxMana']     = getrenv()._G['PlayersData'][playerObj]['MaxMana']*10
     newLocalPlayer['Mana']        = newLocalPlayer['MaxMana']
@@ -327,7 +336,7 @@ function LocalPlayer.new(playerObj)
         local connection
 
         connection = char.DescendantAdded:Connect(function(child)
-            if (child:IsA('BodyPosition') or child:IsA('BodyVelocity')) and child.Name ~= 'bv' and child.MaxForce ~= Vector3.new(54000, 0, 54000) and newLocalPlayer.AntiStun == true then task.wait(.05) child:Destroy() end
+            if (child:IsA('BodyPosition') or child:IsA('BodyVelocity')) and child.Name ~= 'bv' and child.Name ~= 'bp' and child.MaxForce ~= Vector3.new(54000, 0, 54000) and newLocalPlayer.AntiStun == true then task.wait(.05) child:Destroy() end
         end)
 
         hum.Died:Connect(function() connection:Disconnect() end)
@@ -1043,7 +1052,7 @@ function Spells.new(localPlayer)
         local randomPlayer = nil
 
         for _, plr in ipairs(Players:GetChildren()) do
-            if plr == localPlayer.Obj or ClassPlayers['Enemies'][plr.Name] == nil then continue end
+            if plr == localPlayer.Obj or ClassPlayers['Enemies'][plr.Name] == nil or ClassPlayers['Enemies'][plr.Name]:HasShield() == true then continue end
             randomPlayer = plr
             break
         end
@@ -1224,8 +1233,9 @@ function Spells.new(localPlayer)
         local angle2 = math.asin(velocity.Magnitude*math.sin(angle)/newSpells.Velocity)
         local predtime = p2.Magnitude/(velocity.Magnitude*math.cos(angle)+newSpells.Velocity*math.cos(angle2))
         
-        if predtime == math.huge then return end
+        if predtime == math.huge or predtime ~= predtime then newSpells.PredictedPosition = localPlayer.Mouse.Hit.Position return end
 
+        ClientData:FireServer({['Cooldowns'] = "{}", ['Mouse'] = localPlayer.Mouse.Hit.Position, ['Holding'] = false, ['Camera'] = localPlayer.Camera.CFrame.Position,})
         newSpells.PredictedPosition = p1 + velocity * predtime
     end)
 
@@ -1368,6 +1378,8 @@ spellsLibrary['Event']['Illusive Atake'] = function(Args, newSpells, localPlayer
         local p1 = newSpells.SpellsTarget.PrimaryPart.Position
         local v1 = newSpells.SpellsTarget.Velocity
 
+        task.wait(.15)
+
         delayArgs[3] = CFrame.new(p1 + v1*.2)
         DoMagic:InvokeServer(unpack(delayArgs))
 
@@ -1394,13 +1406,17 @@ spellsLibrary['Event']['Disorder Ignition'] = function(Args, newSpells, localPla
         DoMagic:InvokeServer(unpack(delayArgs))
         task.wait(3)
         newSpells:TPCharacterBySpellType(oldCFrame)
-        task.wait(.03)
-        localPlayer.PrimaryPart.Anchored = true
+
+        local bodyPosition    = Instance.new('BodyPosition')
+        bodyPosition.Position = localPlayer.PrimaryPart.Position
+        bodyPosition.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bodyPosition.P = 40000
+
+        bodyPosition.Parent = localPlayer.PrimaryPart
+        Debris:AddItem(bodyPosition, 1)
         task.wait(.2)
         KeyReserve:FireServer(Enum.KeyCode.Y)
         task.wait(1)
-        localPlayer.PrimaryPart.Anchored = false
-        task.wait(.1)
         localPlayer.PrimaryPart.CFrame = oldCFrame
     end)
 
@@ -1829,7 +1845,6 @@ local gameGui     = GUI.new(localPlayer)
 local spellsClass = Spells.new(localPlayer)
 local mainClass   = Main.new(localPlayer)
 
-
 local playersDropDown
 
 localPlayer.PlayerGui.Menu.Sound.Playing = false
@@ -1963,7 +1978,7 @@ while gameGui.IsLoaded == false do task.wait() end
 --//EXPLOIT GUI
 
 
-local Window = Library.CreateLib("The Void ".."v"..0.5, "GrapeTheme")
+local Window = Library.CreateLib("The Void ".."v"..0.51, "GrapeTheme")
 
 local MainTab   = Window:NewTab("Main")
 local SpellsTab = Window:NewTab("Spells")
