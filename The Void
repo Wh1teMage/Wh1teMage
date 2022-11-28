@@ -229,7 +229,6 @@ function Player.new(playerObj)
         if newPlayer.PrimaryPart == nil then return end
 
         local velocity = (newPlayer.PrimaryPart.Position - startPosition)/(os.clock() - startTime)
-        if type(velocity) ~= 'number' then return end
 
         newPlayer.Velocity = velocity
     end)    
