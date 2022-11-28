@@ -1048,12 +1048,18 @@ function Spells.new(localPlayer)
 
     function newSpells:GetSpellsTargetByType()
         newSpells.SpellsTarget = localPlayer.SelectedTarget
-        local randomPlayer = nil
+        local randomPlayer = game.Players:GetChildren()[1]
 
         for _, plr in ipairs(Players:GetChildren()) do
             if plr == localPlayer.Obj or ClassPlayers['Enemies'][plr.Name] == nil or ClassPlayers['Enemies'][plr.Name]:HasShield() == true then continue end
             randomPlayer = plr
             break
+        end
+
+        if ClassPlayers['Enemies'][randomPlayer.Name] == nil then
+            newSpells.SpellsTarget = localPlayer
+            localPlayer.ClosestTarget = newSpells.SpellsTarget
+            return
         end
 
         if newSpells.SelectedType == 'Closest' then
@@ -1216,14 +1222,14 @@ function Spells.new(localPlayer)
 
         task.delay(newSpells.ResetSeconds, function() localPlayer.Humanoid:TakeDamage(math.huge) end)
     end)
-
+    
     RunService.RenderStepped:Connect(function()
 
         if localPlayer.Aimbot ~= true then newSpells.PredictedPosition = localPlayer.Mouse.Hit.Position return end
         if newSpells.SpellsTarget == nil or newSpells.SpellsTarget.Character:FindFirstChild('HumanoidRootPart') == nil or localPlayer.Character:FindFirstChild('HumanoidRootPart') == nil then return end
 
-        local p1 = newSpells.SpellsTarget.Character.HumanoidRootPart.Position
-        local p2 = localPlayer.Character.HumanoidRootPart.Position - p1
+        local p1 = newSpells.SpellsTarget.PrimaryPart.Position or Vector3.new(0,0,0)
+        local p2 = (localPlayer.PrimaryPart.Position - p1) or Vector3.new(0,0,0)
 
         local velocity = newSpells.SpellsTarget.Velocity
         if velocity == Vector3.new(0,0,0) then velocity = Vector3.new(.01, .01, .01) end
