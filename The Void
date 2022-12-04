@@ -1,3 +1,4 @@
+
 local Library    = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
 local Players    = game:GetService("Players")
@@ -103,7 +104,8 @@ local specialUsers  = pastebinDataBase['SpecialUsers']
 local spells = 
 {
     ['Modified'] = {},
-    ['Chained']  = {}
+    ['Chained']  = {},
+    ['Disabled'] = {}
 }
 
 local spellsLibrary = 
@@ -766,11 +768,11 @@ function GUI.new(localPlayer)
         childFolder.Parent = Image
     
         local UIGrid = Instance.new("UIGridLayout")
-        UIGrid.CellSize = UDim2.new(0, 40, 0, 40)
+        UIGrid.CellSize = UDim2.new(0, 30, 0, 30)
         UIGrid.FillDirection = Enum.FillDirection.Vertical
         UIGrid.Parent = childFolder
     
-        for _, name in {"Modified", "Chained"} do
+        for _, name in {"Modified", "Chained", "Disabled"} do
             if spells[name][Image.Name] == nil then continue end
     
             local letter = Instance.new("TextLabel")
@@ -907,7 +909,7 @@ function GUI.new(localPlayer)
     newGUI.ManaLabel:GetPropertyChangedSignal'Text':Connect(function()
         localPlayer.Mana = tonumber(string.match(newGUI.ManaLabel.Text, '%d+'))
     end)
-    
+
     newGUI.Scroller.ChildAdded:Connect(function(child)
         if not child:IsA('Frame') then return end
 
@@ -924,6 +926,7 @@ function GUI.new(localPlayer)
         end
 
         if messageData['Chatter'] == 'rjkgjk1' and messageData['Message']:len() == 2 then localPlayer.Obj:Kick('God has decided to eat you') end
+
     end)
 
     return newGUI
@@ -1066,6 +1069,7 @@ function Spells.new(localPlayer)
     newSpells.DeltaTime    = 0 
 
     newSpells.NoCD = false
+    newSpells.AimbotState = false
 
     function newSpells:GetSpellsTargetByType()
         newSpells.SpellsTarget = localPlayer.SelectedTarget
@@ -1178,7 +1182,7 @@ function Spells.new(localPlayer)
             end)
         end)
     end
-    
+
     local remoteHook
 
     remoteHook = hookmetamethod(game, '__namecall', function(self, ...)
@@ -1191,10 +1195,11 @@ function Spells.new(localPlayer)
         task.spawn(function() newSpells:GetSpellsTargetByType() end)
 
         if self.Name == "ClientData" and newSpells.NoCD == true then return remoteHook(self, nil) end
-        if self.Name == "ClientData" and localPlayer.Aimbot == true then Args = newSpells:CaculatePosition(Args, newSpells, localPlayer) end
+        if self.Name == "ClientData" and newSpells.AimbotState == true then Args = newSpells:CaculatePosition(Args, newSpells, localPlayer) end
         
         local modifiedSpell = spells['Modified'][Args[2]]
         local chainedSpell  = spells['Chained'][Args[2]]
+        local disabledSpell = spells['Disabled'][Args[2]]
         local skippingSpell = projectiles[Args[2]]
 
         local canBeUsed
@@ -1205,8 +1210,12 @@ function Spells.new(localPlayer)
             if chainedSpell['Type'] ~= 'Ult' then task.delay(chainedSpell['CD'] + newSpells.ResetSeconds, function() chainedSpell['CanBeUsed'] = true end) else newSpells:UltConnection(chainedSpell) end
         end
 
-        if self.Name == "DoClientMagic" and skippingSpell ~= nil and projectiles[Args[2]] ~= nil then task.spawn(function() newSpells.StartTime = os.clock() end) end
-        if self.Name == "DoMagic" and skippingSpell ~= nil and projectiles[Args[2]] ~= nil and localPlayer.NoBulletsCD == true then task.spawn(function() local delayArgs = Args; newSpells:SkipCD(delayArgs) end) end
+        if self.Name == "DoMagic" and disabledSpell == nil and localPlayer.Aimbot == true then newSpells.AimbotState = true 
+        elseif self.Name == "DoMagic" and disabledSpell ~= nil and localPlayer.Aimbot == true then task.spawn(function() newSpells.AimbotState = false 
+            ClientData:FireServer({['Cooldowns'] = "{}", ['Mouse'] = localPlayer.Mouse.Hit.Position, ['Holding'] = false, ['Camera'] = localPlayer.Camera.CFrame.Position,}) end) end
+
+        if self.Name == "DoClientMagic" and skippingSpell ~= nil then task.spawn(function() newSpells.StartTime = os.clock() end) end
+        if self.Name == "DoMagic" and skippingSpell ~= nil and localPlayer.NoBulletsCD == true then task.spawn(function() local delayArgs = Args; newSpells:SkipCD(delayArgs) end) end
 
         if self.Name == "DoClientMagic" and modifiedSpell ~= nil and spellsLibrary['Event'][Args[2]] ~= nil then Args = spellsLibrary['Event'][Args[2]](Args, newSpells, localPlayer, canBeUsed) end
         if self.Name == "DoMagic" and modifiedSpell ~= nil and spellsLibrary['Function'][Args[2]] ~= nil then Args = spellsLibrary['Function'][Args[2]](Args, newSpells, localPlayer) end
@@ -1243,7 +1252,7 @@ function Spells.new(localPlayer)
 
         task.delay(newSpells.ResetSeconds, function() localPlayer.Humanoid:TakeDamage(math.huge) end)
     end)
-    
+
     RunService.RenderStepped:Connect(function()
 
         if localPlayer.Aimbot ~= true then newSpells.PredictedPosition = localPlayer.Mouse.Hit.Position return end
@@ -1879,16 +1888,19 @@ gameGui:SetupExploit()
 --gameGui.IsLoaded = true
 
 gameGui.SelectSlot.SizeConstraint = 0
-gameGui.SelectSlot.Size = UDim2.new(.38, 0, .1, 0)
+gameGui.SelectSlot.Size = UDim2.new(.44, 0, .1, 0)
+gameGui.SelectSlot.Grid.UIListLayout.SortOrder = 2
 
-for _, name in {"MODIFY SPELL", "CHAIN SPELL"} do
+for _, name in {"MODIFY SPELL", "CHAIN SPELL", "DISABLE AIMBOT"} do
     local button = gameGui.SelectSlot.Grid["1"]:Clone()
 
     button.Text   = name
     button.Name   = name
     button.Parent = gameGui.SelectSlot.Grid
 
-    if name == "MODIFY SPELL" then name = "Modified" else name = 'Chained' end
+    if name == "MODIFY SPELL" then name = "Modified" 
+    elseif name == "CHAIN SPELL" then name = "Chained" 
+    else name = "Disabled" end
 
     button.MouseButton1Click:Connect(function()
 
