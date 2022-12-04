@@ -1178,7 +1178,7 @@ function Spells.new(localPlayer)
             end)
         end)
     end
-
+    
     local remoteHook
 
     remoteHook = hookmetamethod(game, '__namecall', function(self, ...)
@@ -1190,8 +1190,8 @@ function Spells.new(localPlayer)
 
         task.spawn(function() newSpells:GetSpellsTargetByType() end)
 
-        if self.Name == "ClientData" and localPlayer.Aimbot == true then Args = newSpells:CaculatePosition(Args, newSpells, localPlayer) end
         if self.Name == "ClientData" and newSpells.NoCD == true then return remoteHook(self, nil) end
+        if self.Name == "ClientData" and localPlayer.Aimbot == true then Args = newSpells:CaculatePosition(Args, newSpells, localPlayer) end
         
         local modifiedSpell = spells['Modified'][Args[2]]
         local chainedSpell  = spells['Chained'][Args[2]]
@@ -1205,11 +1205,11 @@ function Spells.new(localPlayer)
             if chainedSpell['Type'] ~= 'Ult' then task.delay(chainedSpell['CD'] + newSpells.ResetSeconds, function() chainedSpell['CanBeUsed'] = true end) else newSpells:UltConnection(chainedSpell) end
         end
 
+        if self.Name == "DoClientMagic" and skippingSpell ~= nil and projectiles[Args[2]] ~= nil then task.spawn(function() newSpells.StartTime = os.clock() end) end
+        if self.Name == "DoMagic" and skippingSpell ~= nil and projectiles[Args[2]] ~= nil and localPlayer.NoBulletsCD == true then task.spawn(function() local delayArgs = Args; newSpells:SkipCD(delayArgs) end) end
+
         if self.Name == "DoClientMagic" and modifiedSpell ~= nil and spellsLibrary['Event'][Args[2]] ~= nil then Args = spellsLibrary['Event'][Args[2]](Args, newSpells, localPlayer, canBeUsed) end
         if self.Name == "DoMagic" and modifiedSpell ~= nil and spellsLibrary['Function'][Args[2]] ~= nil then Args = spellsLibrary['Function'][Args[2]](Args, newSpells, localPlayer) end
-
-        if self.Name == "DoClientMagic" and skippingSpell ~= nil and projectiles[Args[2]] ~= nil then newSpells.StartTime = os.clock() end
-        if self.Name == 'DoMagic' and skippingSpell ~= nil and projectiles[Args[2]] ~= nil and localPlayer.NoBulletsCD == true then task.spawn(function() newSpells:SkipCD(Args) end) end
 
         if chainedSpell ~= nil and chainedSpell['Type'] == 'Ult' and canBeUsed == true then
             local delayArgs = Args
