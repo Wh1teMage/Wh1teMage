@@ -1254,6 +1254,7 @@ function Spells.new(localPlayer)
     end)
 
     RunService.RenderStepped:Connect(function()
+        ClientData:FireServer({['Cooldowns'] = "{}", ['Mouse'] = localPlayer.Mouse.Hit.Position, ['Holding'] = false, ['Camera'] = localPlayer.Camera.CFrame.Position,})
 
         if localPlayer.Aimbot ~= true then newSpells.PredictedPosition = localPlayer.Mouse.Hit.Position return end
         if newSpells.SpellsTarget == nil or newSpells.SpellsTarget.Character:FindFirstChild('HumanoidRootPart') == nil or localPlayer.Character:FindFirstChild('HumanoidRootPart') == nil then return end
@@ -1270,7 +1271,6 @@ function Spells.new(localPlayer)
         
         if predtime == math.huge or predtime ~= predtime then newSpells.PredictedPosition = localPlayer.Mouse.Hit.Position return end
 
-        ClientData:FireServer({['Cooldowns'] = "{}", ['Mouse'] = localPlayer.Mouse.Hit.Position, ['Holding'] = false, ['Camera'] = localPlayer.Camera.CFrame.Position,})
         newSpells.PredictedPosition = p1 + velocity * predtime
     end)
 
