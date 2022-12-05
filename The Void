@@ -1,4 +1,3 @@
-
 local Library    = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
 local Players    = game:GetService("Players")
@@ -290,6 +289,7 @@ function LocalPlayer.new(playerObj)
     newLocalPlayer['AutoFarm']     = false
     newLocalPlayer['NoBulletsCD']  = false
 
+    newLocalPlayer['ManualInfBullets'] = false
     newLocalPlayer['HasFinishedRespawning'] = false
 
     newLocalPlayer['Controls'] = 
@@ -1274,6 +1274,16 @@ function Spells.new(localPlayer)
         newSpells.PredictedPosition = p1 + velocity * predtime
     end)
 
+    UIS.InputBegan:Connect(function(input, event)
+        if event or input.KeyCode ~= Enum.KeyCode.V or localPlayer.ManualInfBullets == false then return end
+        newSpells.NoCD = true
+    end)
+
+    UIS.InputEnded:Connect(function(input, event)
+        if event or input.KeyCode ~= Enum.KeyCode.V or localPlayer.ManualInfBullets == false then return end
+        newSpells.NoCD = false
+    end)
+
     task.spawn(function()
         while localPlayer ~= nil do
 
@@ -1307,7 +1317,7 @@ spellsLibrary['Event']['Blaze Column'] = function(Args, newSpells, localPlayer)
             localPlayer.PrimaryPart.CFrame = newSpells.SpellsTarget.CFrame + Vector3.new(0,40,0)
         end
 
-        task.wait(.3)
+        task.wait(.4)
 
         local p1 = newSpells.SpellsTarget.PrimaryPart.Position
         local v1 = newSpells.SpellsTarget.Velocity
@@ -1929,7 +1939,7 @@ localPlayer.Obj.Idled:Connect(function()
 end)
 
 workspace['.Ignore']['.LocalEffects'].ChildAdded:Connect(function(child)
-    if child.Name == 'LightDisc' or child.Name == 'BoltPart' or string.match(child.Name, 'Sound') ~= nil then Debris:AddItem(child, 3) end
+    if child.Name == 'LightDisc' or child.Name == 'BoltPart' or string.match(child.Name, 'Sound') ~= nil then Debris:AddItem(child, 5) end
 end)
 
 workspace['.Ignore']['.Attacks'].ChildAdded:Connect(function(child)
@@ -2123,6 +2133,10 @@ end)
 
 SpellsMainSection:NewToggle('Inf Bullets', 'test', function(value)
     localPlayer.NoBulletsCD = value
+end)
+
+SpellsMainSection:NewToggle('Manual Inf Bullets', 'V to enable/disable', function(value)
+    localPlayer.ManualInfBullets = value
 end)
 
 SpellsMainSection:NewToggle('Aimbot', 'test', function(value)
