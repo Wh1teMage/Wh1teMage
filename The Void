@@ -337,7 +337,7 @@ function LocalPlayer.new(playerObj)
         local connection
 
         connection = char.DescendantAdded:Connect(function(child)
-            if (child:IsA('BodyPosition') or child:IsA('BodyVelocity')) and child.Name ~= 'bv' and child.Name ~= 'bp' and child.MaxForce ~= Vector3.new(54000, 0, 54000) and newLocalPlayer.AntiStun == true then task.wait(.05) child:Destroy() end
+            if (child:IsA('BodyPosition') or child:IsA('BodyVelocity')) and child.Name ~= 'bv' and child.Name ~= 'bp' and child.Parent.Name ~= 'FlipsHolder' and newLocalPlayer.AntiStun == true then task.wait(.05) child:Destroy() end
         end)
 
         hum.Died:Connect(function() connection:Disconnect() end)
