@@ -1628,6 +1628,8 @@ spellsLibrary['Event']['Unmatched Power of the Sun'] = function(Args, newSpells,
     return Args
 end
 
+spellsLibrary['Event']["Hell's Core"] = spellsLibrary['Event']['Double Ray']
+
 spellsLibrary['Event']['Ablaze Judgement'] = function(Args, newSpells, localPlayer)
 
     task.delay(.01, function()
@@ -1878,10 +1880,21 @@ spellsLibrary['Function']['Virtual Zone'] = function(Args, newSpells, localPlaye
     return Args
 end
 
+spellsLibrary['Function']['Polaris'] = function(Args, newSpells, localPlayer)
+    Args[3] = newSpells.SpellsTarget.CFrame
+    return Args
+end
+
 spellsLibrary['Function']['Void Opening'] = function(Args, newSpells, localPlayer)
     Args[3] = {['pos'] = newSpells.SpellsTarget.CFrame.Position + newSpells.SpellsTarget.Velocity*.1}
     return Args
 end
+
+spellsLibrary['Function']["Hell's Core"] = function(Args, newSpells, localPlayer)
+    if Args[3] == nil then return end
+    return Args
+end
+
 
 --//SETUP
 
