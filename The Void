@@ -73,7 +73,7 @@ if versionLength == #formatedVerion then passes += 1 end
 if pastebinDataBase['HWIDs'][HWID] ~= nil then passes += 1 end
 for i, v in pairs(keys) do if v == getrenv().exploitKey then passes += 1 break end end
 
-while passes ~= 3 do warn('You are not whitelisted') task.wait() end
+--while passes ~= 3 do warn('You are not whitelisted') task.wait() end
 
 warn('Welcome back, '..game.Players.LocalPlayer.Name..'!')
 warn(
@@ -127,7 +127,7 @@ local KeyReserve    = Replicated['Remotes']['KeyReserve']
 local PlayerData    = Replicated['Remotes']['PlayerData']
 local ClientData    = Replicated['Remotes']['ClientData']
 
-if passes ~= 3 then while true do print('') end end
+--if passes ~= 3 then while true do print('') end end
 
 repeat task.wait() until game:IsLoaded()
 
